@@ -936,7 +936,10 @@
         <button class="btn-secondary" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
           Start a new scan
         </button>
-        <button class="btn-secondary" onclick="alert('PDF export coming soon')">
+        <button class="btn-secondary" onclick="copyPlanToClipboard()">
+          Copy summary
+        </button>
+        <button class="btn-secondary" onclick="downloadPdf()">
           Download plan as PDF
         </button>
       </div>
@@ -948,6 +951,9 @@
     medical advice.
   </footer>
 
+  <!-- jsPDF for PDF export -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
   <script>
     function scrollToForm() {
       const el = document.getElementById("form-section");
@@ -957,6 +963,7 @@
     const form = document.getElementById("sleep-form");
     const loadingEl = document.getElementById("loading");
     const resultsSection = document.getElementById("results-section");
+    let lastResult = null;
 
     form.addEventListener("submit", function (e) {
       e.preventDefault();
@@ -1510,6 +1517,8 @@
     }
 
     function renderResults(result) {
+      lastResult = result;
+
       // Overall score and text
       const scoreEl = document.getElementById("overall-score");
       scoreEl.innerHTML = `${Math.round(result.score)}<span>/100</span>`;
@@ -1597,6 +1606,131 @@
         `;
         routineBlocks.appendChild(block);
       });
+    }
+
+    async function copyPlanToClipboard() {
+      if (!lastResult) {
+        alert("Please run a sleep scan first.");
+        return;
+      }
+
+      let text = "";
+      text += "Sleepscan AI - Your sleep summary\n\n";
+      text += `Score: ${Math.round(lastResult.score)}/100\n`;
+      text += `${lastResult.overallText}\n\n`;
+      text += `Focus: ${lastResult.focusText}\n\n`;
+
+      text += "Key blockers:\n";
+      lastResult.pills.forEach((p) => {
+        text += `- ${p}\n`;
+      });
+
+      text += "\nRoot causes:\n";
+      lastResult.rootCauses.forEach((rc) => {
+        text += `• ${rc.title}: ${rc.text}\n`;
+      });
+
+      text += "\n7 day plan:\n";
+      lastResult.plan.forEach((day) => {
+        text += `${day.day} - ${day.focus}\n`;
+        day.actions.forEach((a) => {
+          text += `  - ${a}\n`;
+        });
+        text += "\n";
+      });
+
+      text += "Wind down routine:\n";
+      lastResult.routine.forEach((r) => {
+        text += `${r.time}: ${r.text}\n`;
+      });
+
+      try {
+        await navigator.clipboard.writeText(text);
+        alert("Summary copied to clipboard.");
+      } catch (err) {
+        alert("Could not copy to clipboard. Please try again.");
+      }
+    }
+
+    function downloadPdf() {
+      if (!lastResult) {
+        alert("Please run a sleep scan first.");
+        return;
+      }
+
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert("PDF library failed to load. Please refresh the page and try again.");
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      let y = 10;
+      const lineHeight = 6;
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 10;
+
+      function addWrappedText(text, x, yPos, maxWidth) {
+        const lines = doc.splitTextToSize(text, maxWidth);
+        lines.forEach((line) => {
+          if (yPos + lineHeight > pageHeight - margin) {
+            doc.addPage();
+            yPos = margin;
+          }
+          doc.text(line, x, yPos);
+          yPos += lineHeight;
+        });
+        return yPos;
+      }
+
+      doc.setFontSize(16);
+      doc.text("Sleepscan AI - Sleep report", margin, y);
+      y += lineHeight * 1.5;
+
+      doc.setFontSize(12);
+      y = addWrappedText(
+        `Score: ${Math.round(lastResult.score)}/100`,
+        margin,
+        y,
+        180
+      );
+
+      y = addWrappedText(lastResult.overallText, margin, y + 2, 180);
+      y = addWrappedText("Focus:", margin, y + 4, 180);
+      y = addWrappedText(lastResult.focusText, margin + 4, y, 176);
+
+      y += 4;
+      doc.setFontSize(12);
+      y = addWrappedText("Key blockers:", margin, y, 180);
+      lastResult.pills.forEach((p) => {
+        y = addWrappedText(`- ${p}`, margin + 4, y, 176);
+      });
+
+      y += 4;
+      y = addWrappedText("Root causes:", margin, y, 180);
+      lastResult.rootCauses.forEach((rc) => {
+        y = addWrappedText(`• ${rc.title}`, margin + 2, y, 176);
+        y = addWrappedText(rc.text, margin + 6, y, 172);
+      });
+
+      y += 4;
+      y = addWrappedText("7 day plan:", margin, y, 180);
+      lastResult.plan.forEach((day) => {
+        y = addWrappedText(`${day.day} - ${day.focus}`, margin + 2, y, 176);
+        day.actions.forEach((a) => {
+          y = addWrappedText(`- ${a}`, margin + 6, y, 172);
+        });
+        y += 2;
+      });
+
+      y += 2;
+      y = addWrappedText("Wind down routine:", margin, y, 180);
+      lastResult.routine.forEach((r) => {
+        y = addWrappedText(`${r.time}: ${r.text}`, margin + 2, y, 176);
+      });
+
+      doc.save("sleepscan-report.pdf");
     }
 
     // Later you can replace fakeAiResponse with a real API call structure like:

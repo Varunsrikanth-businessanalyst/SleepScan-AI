@@ -965,287 +965,348 @@
       }, 1200);
     });
 
-    // This function simulates AI logic for now
-    function fakeAiResponse(inputs) {
-      // Simple heuristic for demo
-      const hours = parseFloat(inputs.hours || 0);
-      let score = 70;
+    <script>
+  function scrollToForm() {
+    const el = document.getElementById("form-section");
+    el.scrollIntoView({ behavior: "smooth" });
+  }
 
-      if (hours < 6) score -= 20;
-      if (inputs.screen === ">60") score -= 15;
-      if (inputs.consistency === "3-4" || inputs.consistency === "always")
-        score -= 10;
-      if (parseInt(inputs.stress, 10) >= 4) score -= 10;
+  const form = document.getElementById("sleep-form");
+  const loadingEl = document.getElementById("loading");
+  const resultsSection = document.getElementById("results-section");
 
-      if (score < 5) score = 5;
-      if (score > 95) score = 95;
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
 
-      const subs = [
-        {
-          name: "Sleep duration",
-          value: Math.max(40, Math.min(95, 50 + (hours - 6) * 8)),
-          label:
-            hours < 6
-              ? "You are regularly sleeping less than your body likely needs."
-              : "Your sleep duration is mostly in a healthy range.",
-        },
-        {
-          name: "Routine consistency",
-          value:
-            inputs.consistency === "never"
-              ? 90
-              : inputs.consistency === "1-2"
-              ? 75
-              : inputs.consistency === "3-4"
-              ? 55
-              : 40,
-          label:
-            inputs.consistency === "never"
-              ? "Your body clock benefits from a stable routine."
-              : "Changes in your sleep and wake times are making it harder to reach deeper sleep.",
-        },
-        {
-          name: "Stress impact",
-          value: 100 - parseInt(inputs.stress, 10) * 12,
-          label:
-            parseInt(inputs.stress, 10) >= 4
-              ? "High stress is likely carrying into the night."
-              : "Your stress is present but somewhat manageable.",
-        },
-        {
-          name: "Evening habits",
-          value:
-            inputs.screen === ">60"
-              ? 45
-              : inputs.screen === "30-60"
-              ? 60
-              : inputs.screen === "<30"
-              ? 75
-              : 85,
-          label:
-            inputs.screen === ">60"
-              ? "Extended screen time before bed makes it harder for your brain to switch off."
-              : "Your evening habits can still be optimized for better rest.",
-        },
-      ];
+    loadingEl.style.display = "block";
+    resultsSection.style.display = "none";
 
-      // Root causes and plan stub
-      const rootSummary =
-        "Based on your answers, the main reason you feel tired is not only the number of hours you sleep. Your body clock and evening stimulation are playing a big role.";
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    data.stress = document.getElementById("stress").value;
 
-      const rootCauses = [
-        {
-          title: "Irregular sleep timing",
-          text:
-            "Frequent changes in when you go to bed or wake up make it harder for your body to predict when to lower alertness and enter deeper sleep stages.",
-        },
-        {
-          title: "High screen exposure before bed",
-          text:
-            "Long periods on phones or laptops shortly before sleeping keep your brain engaged and reduce melatonin release, which delays sleep onset.",
-        },
-        {
-          title: "Mental load and stress",
-          text:
-            "Higher stress levels keep your mind in problem solving mode, which means you are more likely to stay alert in bed or wake during the night.",
-        },
-      ];
+    setTimeout(() => {
+      const aiResult = fakeAiResponse(data);
+      renderResults(aiResult);
+      loadingEl.style.display = "none";
+      resultsSection.style.display = "block";
+      resultsSection.scrollIntoView({ behavior: "smooth" });
+    }, 1200);
+  });
 
-      const plan = [
-        {
-          day: "Day 1",
-          focus: "Set a realistic sleep window",
-          actions: [
-            "Pick a target bedtime and wake time within a 30 minute window that fits your current life.",
-            "Avoid shifting this window today, even if you fall asleep a little later than planned.",
-          ],
-        },
-        {
-          day: "Day 2",
-          focus: "Reduce late screen exposure",
-          actions: [
-            "Aim to put your main screens away at least 30 minutes before bed.",
-            "Use that time for a calm activity such as reading, stretching or light journaling.",
-          ],
-        },
-        {
-          day: "Day 3",
-          focus: "Adjust caffeine timing",
-          actions: [
-            "Keep your last caffeinated drink at least 6 hours before your planned bedtime.",
-            "Notice if you feel slightly more able to wind down in the evening.",
-          ],
-        },
-        {
-          day: "Day 4",
-          focus: "Add gentle daytime movement",
-          actions: [
-            "Include at least 10 to 15 minutes of light movement, like a walk or easy stretching.",
-            "Movement helps your body separate day energy from night rest.",
-          ],
-        },
-        {
-          day: "Day 5",
-          focus: "Create a simple wind down routine",
-          actions: [
-            "Decide on a 20 to 30 minute routine that you can repeat most nights.",
-            "Keep it simple so it is realistic on busy days too.",
-          ],
-        },
-        {
-          day: "Day 6",
-          focus: "Protect your sleep window",
-          actions: [
-            "Try to keep your sleep and wake times within the same 30 minute window.",
-            "Avoid the temptation to sleep in much later than usual.",
-          ],
-        },
-        {
-          day: "Day 7",
-          focus: "Review and adjust",
-          actions: [
-            "Notice how your energy, focus and mood have changed across the week.",
-            "Decide which habits you want to keep for the next two weeks.",
-          ],
-        },
-      ];
 
-      const routine = [
-        {
-          time: "30 minutes before bed",
-          text:
-            "Dim bright lights, reduce notifications and finish any stimulating tasks for the day.",
-        },
-        {
-          time: "20 minutes before bed",
-          text:
-            "Do one calm, screen free activity such as reading a few pages or gentle stretching.",
-        },
-        {
-          time: "10 minutes before bed",
-          text:
-            "Practice a simple breathing pattern like 4 seconds in, 4 seconds hold and 6 seconds out.",
-        },
-      ];
+  /* ===============================================
+     NEW AI ENGINE – Uses ALL sleep inputs dynamically
+  ===============================================*/
+  function fakeAiResponse(inputs) {
+    const hours = parseFloat(inputs.hours || 0);
+    const stress = parseInt(inputs.stress || "3", 10);
 
-      let overallText =
-        "Your sleep is in a moderate place, but your routine and evening habits are limiting how restored you feel in the morning.";
+    const factors = [];
 
-      if (score < 45) {
-        overallText =
-          "Your sleep needs more support. The combination of short sleep, irregular timing and stimulating evenings is making it hard for you to recover fully.";
-      } else if (score > 75) {
-        overallText =
-          "Your sleep foundation is fairly solid, and a few targeted changes around consistency and evening habits can unlock deeper rest.";
+    function addFactor(key, label, risk, text) {
+      factors.push({ key, label, risk, text });
+    }
+
+    // Duration score
+    const durationRisk = hours < 5 ? 3 : hours < 6 ? 2 : hours < 7 ? 1 : 0;
+    addFactor(
+      "duration",
+      "Short sleep duration",
+      durationRisk,
+      hours < 6
+        ? "You are regularly sleeping less than your body likely needs to fully recover."
+        : "Your sleep duration is mostly in a healthy range."
+    );
+
+    // Consistency
+    const consistencyRisk =
+      inputs.consistency === "always"
+        ? 3
+        : inputs.consistency === "3-4"
+        ? 2
+        : inputs.consistency === "1-2"
+        ? 1
+        : 0;
+    addFactor(
+      "consistency",
+      "Irregular sleep timing",
+      consistencyRisk,
+      consistencyRisk === 0
+        ? "Your body clock benefits from a fairly stable routine."
+        : "Frequent shifts in bedtime make it harder to enter deeper sleep."
+    );
+
+    // Screen time
+    const screenRisk =
+      inputs.screen === ">60"
+        ? 3
+        : inputs.screen === "30-60"
+        ? 2
+        : inputs.screen === "<30"
+        ? 1
+        : 0;
+    addFactor(
+      "screen",
+      "Late screen time",
+      screenRisk,
+      screenRisk >= 2
+        ? "Strong evening screen exposure keeps the brain alert and delays melatonin."
+        : "Your screen exposure is moderate but can still be refined."
+    );
+
+    // Stress
+    const stressRisk = stress >= 5 ? 3 : stress === 4 ? 2 : stress === 3 ? 1 : 0;
+    addFactor(
+      "stress",
+      "Mental load and stress",
+      stressRisk,
+      stressRisk >= 2
+        ? "High stress continues into night, making switching off harder."
+        : "Stress is present but reasonably manageable."
+    );
+
+    // Caffeine
+    const caffeineRisk =
+      inputs.caffeine === "3+"
+        ? 3
+        : inputs.caffeine === "2"
+        ? 2
+        : inputs.caffeine === "1"
+        ? 1
+        : 0;
+    addFactor(
+      "caffeine",
+      "Caffeine load",
+      caffeineRisk,
+      caffeineRisk >= 2
+        ? "High caffeine intake can stay in the system and lower sleep depth."
+        : "Caffeine unlikely to be a main driver, but timing still matters."
+    );
+
+    // Meal timing
+    const mealRisk = inputs.meal === "<1" ? 3 : inputs.meal === "1-2" ? 1 : 0;
+    addFactor(
+      "meal",
+      "Late heavy meals",
+      mealRisk,
+      mealRisk >= 2
+        ? "Eating too close to bed increases digestion load at night."
+        : "Meal timing supports sleep fairly well."
+    );
+
+    // Activity
+    const activityRisk =
+      inputs.activity === "none"
+        ? 3
+        : inputs.activity === "1-2"
+        ? 2
+        : inputs.activity === "3-4"
+        ? 1
+        : 0;
+    addFactor(
+      "activity",
+      "Low daytime movement",
+      activityRisk,
+      activityRisk >= 2
+        ? "Low activity lowers sleep pressure at night."
+        : "Movement habits generally support better rest."
+    );
+
+    // Night awakenings
+    const wakeRisk =
+      inputs.wakeups === "3+"
+        ? 3
+        : inputs.wakeups === "1-2"
+        ? 2
+        : 0;
+    addFactor(
+      "wakeups",
+      "Fragmented sleep",
+      wakeRisk,
+      wakeRisk >= 2
+        ? "Frequent waking fragments sleep depth."
+        : "Sleep appears mostly continuous."
+    );
+
+    const sorted = [...factors].sort((a, b) => b.risk - a.risk);
+    const primary = sorted[0], secondary = sorted[1], tertiary = sorted[2];
+
+    let score = 88 - factors.reduce((sum, f) => sum + f.risk * 5, 0);
+    score = Math.max(5, Math.min(95, score));
+
+    const subs = [
+      {
+        name: "Sleep duration",
+        value: 80 - durationRisk * 15,
+        label: factors.find(f => f.key === "duration").text,
+      },
+      {
+        name: "Routine consistency",
+        value: 85 - consistencyRisk * 18,
+        label: factors.find(f => f.key === "consistency").text,
+      },
+      {
+        name: "Stress impact",
+        value: 90 - stressRisk * 18,
+        label: factors.find(f => f.key === "stress").text,
+      },
+      {
+        name: "Evening habits",
+        value: 88 - (screenRisk + mealRisk + caffeineRisk) * 6,
+        label:
+          screenRisk >= 2 || mealRisk >= 2 || caffeineRisk >= 2
+            ? "Evening habits are overstimulating the system."
+            : "Evening routine is mostly supportive."
       }
+    ].map(s => ({ ...s, value: Math.max(30, Math.min(95, s.value)) }));
 
-      const focusText =
-        "Primary focus for the next 7 days: make your sleep and wake times more predictable and gently reduce late screen exposure.";
+    const overallText =
+      score < 45
+        ? `Your sleep needs more support. ${primary.label} and ${secondary.label} are the strongest blockers.`
+        : score > 75
+        ? `Your foundation is solid. Small tuning around ${primary.label.toLowerCase()} could unlock deeper rest.`
+        : `Moderate sleep health. Improving ${primary.label.toLowerCase()} and ${secondary.label.toLowerCase()} will boost recovery.`;
 
+    const focusText =
+      `Primary focus for next 7 days: improve ${primary.label.toLowerCase()}, while supporting ${secondary.label.toLowerCase()}.`;
+
+    const rootSummary =
+      `Main disruptor: ${primary.label.toLowerCase()}. Also influenced by ${secondary.label.toLowerCase()} and ${tertiary.label.toLowerCase()}.`;
+
+    const rootCauses = [primary, secondary, tertiary]
+      .filter(f => f.risk > 0)
+      .map(f => ({ title: f.label, text: f.text }));
+
+    const plan = Array.from({ length: 7 }).map((_, i) => {
+      const titles = [
+        "Observe pattern",
+        "Target primary blocker",
+        "Support second driver",
+        "Daytime light + movement",
+        "Wind-down routine",
+        "Protect sleep window",
+        "Review + lock habits"
+      ];
+      const focuses = [
+        "Understand your baseline",
+        `Improve ${primary.label.toLowerCase()}`,
+        `Support ${secondary.label.toLowerCase()}`,
+        "Increase sleep pressure",
+        "Lower pre-sleep stimulation",
+        "Stability of timing",
+        "Habit consolidation"
+      ];
       return {
-        score,
-        subs,
-        rootSummary,
-        rootCauses,
-        plan,
-        routine,
-        overallText,
-        focusText,
-        pills: [
-          "Biggest blocker: late screens",
-          "Secondary: shifting sleep times",
-          "Support: stress and mental load",
-        ],
+        day: `Day ${i + 1}`,
+        focus: focuses[i],
+        actions: [
+          i === 1 ? `Focus today on ${primary.label.toLowerCase()}.` : "",
+          i === 2 ? `Add one change for ${secondary.label.toLowerCase()}.` : "",
+          "Keep changes small and repeatable."
+        ].filter(Boolean)
       };
-    }
+    });
 
-    function renderResults(result) {
-      // Overall score and text
-      const scoreEl = document.getElementById("overall-score");
-      scoreEl.innerHTML = `${Math.round(result.score)}<span>/100</span>`;
+    const routine = [
+      { time: "30 mins before bed", text: "Dim lights, silence notifications." },
+      { time: "20 mins before bed", text: "Screen-free calming activity." },
+      { time: "10 mins before bed", text: "Slow breathing 4-4-6 cycle." }
+    ];
 
-      document.getElementById("overall-text").textContent =
-        result.overallText || "";
-      document.getElementById("focus-text").textContent =
-        result.focusText || "";
+    return {
+      score, subs, rootSummary, rootCauses,
+      plan, routine, overallText, focusText,
+      pills: [
+        `Primary: ${primary.label}`,
+        `Secondary: ${secondary.label}`,
+        `Additional factor: ${tertiary.label}`
+      ]
+    };
+  }
 
-      // Pills
-      const pillRow = document.getElementById("pill-row");
-      pillRow.innerHTML = "";
-      result.pills.forEach((p, idx) => {
-        const div = document.createElement("div");
-        div.className = "pill" + (idx === 0 ? " primary" : "");
-        div.textContent = p;
-        pillRow.appendChild(div);
-      });
 
-      // Subscores
-      const subsGrid = document.getElementById("subscores-grid");
-      subsGrid.innerHTML = "";
-      result.subs.forEach((sub) => {
-        const card = document.createElement("div");
-        card.className = "subscore-card";
-        card.innerHTML = `
-          <div class="subscore-title">${sub.name}</div>
-          <div class="subscore-value">${Math.round(sub.value)}/100</div>
-          <div class="subscore-label">${sub.label}</div>
-        `;
-        subsGrid.appendChild(card);
-      });
+  /* ==========================================================
+     Render results + NEW Score colour state
+  ==========================================================*/
+  function renderResults(result) {
+    const scoreEl = document.getElementById("overall-score");
+    scoreEl.innerHTML = `${Math.round(result.score)}<span>/100</span>`;
 
-      // Root causes
-      document.getElementById("root-summary").textContent =
-        result.rootSummary || "";
+    // Apply color state
+    scoreEl.classList.remove("good", "moderate", "poor");
+    if (result.score >= 75) scoreEl.classList.add("good");
+    else if (result.score >= 50) scoreEl.classList.add("moderate");
+    else scoreEl.classList.add("poor");
 
-      const rootList = document.getElementById("root-list");
-      rootList.innerHTML = "";
-      result.rootCauses.forEach((rc) => {
-        const div = document.createElement("div");
-        div.className = "root-item";
-        div.innerHTML = `
-          <div class="root-title">${rc.title}</div>
-          <div>${rc.text}</div>
-        `;
-        rootList.appendChild(div);
-      });
 
-      // 7 day plan
-      const planList = document.getElementById("plan-list");
-      planList.innerHTML = "";
-      result.plan.forEach((day) => {
-        const card = document.createElement("div");
-        card.className = "day-card";
-        const actionsHtml = day.actions
-          .map((a) => `<li>${a}</li>`)
-          .join("");
-        card.innerHTML = `
-          <div class="day-header">${day.day}</div>
-          <div class="day-focus">${day.focus}</div>
-          <ul class="day-actions">${actionsHtml}</ul>
-        `;
-        planList.appendChild(card);
-      });
+    document.getElementById("overall-text").textContent = result.overallText;
+    document.getElementById("focus-text").textContent = result.focusText;
 
-      // Night routine
-      const routineBlocks = document.getElementById("routine-blocks");
-      routineBlocks.innerHTML = "";
-      result.routine.forEach((r) => {
-        const block = document.createElement("div");
-        block.className = "routine-block";
-        block.innerHTML = `
-          <div class="routine-time">${r.time}</div>
-          <div>${r.text}</div>
-        `;
-        routineBlocks.appendChild(block);
-      });
-    }
+    const pillRow = document.getElementById("pill-row");
+    pillRow.innerHTML = "";
+    result.pills.forEach((p, i) => {
+      const div = document.createElement("div");
+      div.className = "pill" + (i === 0 ? " primary" : "");
+      div.textContent = p;
+      pillRow.appendChild(div);
+    });
 
-    // Later you can replace fakeAiResponse with a real API call structure like:
-    // async function fetchAiResponse(inputs) {
-    //   const prompt = buildPrompt(inputs);
-    //   const response = await fetch("YOUR_BACKEND_ENDPOINT", { ... });
-    //   return await response.json();
-    // }
-  </script>
+    const subsGrid = document.getElementById("subscores-grid");
+    subsGrid.innerHTML = "";
+    result.subs.forEach(sub => {
+      const card = document.createElement("div");
+      card.className = "subscore-card";
+      card.innerHTML = `
+        <div class="subscore-title">${sub.name}</div>
+        <div class="subscore-value">${Math.round(sub.value)}/100</div>
+        <div class="subscore-label">${sub.label}</div>
+      `;
+      subsGrid.appendChild(card);
+    });
+
+    document.getElementById("root-summary").textContent = result.rootSummary;
+
+    const rootList = document.getElementById("root-list");
+    rootList.innerHTML = "";
+    result.rootCauses.forEach(rc => {
+      const div = document.createElement("div");
+      div.className = "root-item";
+      div.innerHTML = `
+        <div class="root-title">${rc.title}</div>
+        <div>${rc.text}</div>
+      `;
+      rootList.appendChild(div);
+    });
+
+    const planList = document.getElementById("plan-list");
+    planList.innerHTML = "";
+    result.plan.forEach(day => {
+      const card = document.createElement("div");
+      card.className = "day-card";
+      card.innerHTML = `
+        <div class="day-header">${day.day}</div>
+        <div class="day-focus">${day.focus}</div>
+        <ul class="day-actions">
+          ${day.actions.map(a => `<li>${a}</li>`).join("")}
+        </ul>
+      `;
+      planList.appendChild(card);
+    });
+
+    const routineBlocks = document.getElementById("routine-blocks");
+    routineBlocks.innerHTML = "";
+    result.routine.forEach(r => {
+      const div = document.createElement("div");
+      div.className = "routine-block";
+      div.innerHTML = `
+        <div class="routine-time">${r.time}</div>
+        <div>${r.text}</div>
+      `;
+      routineBlocks.appendChild(div);
+    });
+  }
+</script>
 </body>
 </html>
+

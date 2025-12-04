@@ -642,6 +642,23 @@
     color: var(--text-muted);
     text-align: center;
   }
+    /* ====== OVERRIDES: let the animated background show through ====== */
+
+/* Hero should show full aurora, so remove its dark overlay */
+.hero::before {
+  background: none;
+  opacity: 1;
+}
+
+/* Other sections keep a soft tint for readability, but more transparent */
+section::before {
+  background: radial-gradient(
+    circle at top,
+    rgba(15, 23, 42, 0.45),
+    rgba(2, 6, 23, 0.85)
+  );
+  opacity: 0.5;
+}
   </style>
 </head>
 <body>

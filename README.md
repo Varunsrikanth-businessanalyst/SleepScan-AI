@@ -2,7 +2,7 @@
 
 A browser-based **AI-style sleep coach** that turns your habits into a personalized 7-day sleep reset plan.
 
-Built to be fast, simple, and accessible — **no login, no backend, no tracking.**
+Built to be fast, simple, and accessible - **no login, no backend, no tracking.**
 
 Live Demo:  
 🔗 https://sleepscanai.netlify.app/

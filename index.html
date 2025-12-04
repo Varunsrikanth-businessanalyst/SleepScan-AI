@@ -28,10 +28,19 @@
     }
 
     body {
-      background: radial-gradient(circle at top, #111827, #020617);
-      color: var(--text-main);
-      line-height: 1.5;
-    }
+  min-height: 100vh;
+  color: var(--text-main);
+  line-height: 1.5;
+
+  /* Night sky photo + dark gradient overlay */
+  background-color: #020617;
+  background-image:
+    linear-gradient(to bottom, rgba(3, 7, 18, 0.7), rgba(3, 7, 18, 0.97)),
+    url("https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3?auto=format&fit=crop&w=1920&q=80");
+  background-size: cover;
+  background-position: center top;
+  background-attachment: fixed;
+}
 
     a {
       color: inherit;
@@ -96,14 +105,31 @@
 
     /* ====== Sections ====== */
     section {
-      padding: 3rem 0;
-    }
+  position: relative;
+  padding: 3rem 0;
+  z-index: 0; /* create stacking context for overlay */
+}
 
-    @media (min-width: 768px) {
-      section {
-        padding: 4.5rem 0;
-      }
-    }
+/* Dark, subtle overlay so content is readable on top of the sky */
+section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.98));
+  opacity: 0.95;
+}
+
+@media (min-width: 768px) {
+  section {
+    padding: 4.5rem 0;
+  }
+}
+
+/* Hero a bit lighter so more of the sky shows through */
+.hero::before {
+  background: radial-gradient(circle at top, rgba(15, 23, 42, 0.75), rgba(2, 6, 23, 0.95));
+}
 
     .section-header {
       margin-bottom: 1.5rem;
